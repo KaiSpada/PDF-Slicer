@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Slicer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:   #f0f0ea;
+  --ink-2: #c8c8c0;
+  --ink-3: #909088;
+  --ink-4: #505048;
+  --bg:    #1c1c1a;
+  --bg-2:  #252523;
+  --bg-3:  #363633;
+  --blue:  #5b90ff;
+  --blue-glow: rgba(91,144,255,.22);
+  --red:   #e05555;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --r: 3px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  grid-template-rows: 57px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+header {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--bg-3);
+}
+header h1 {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -.01em;
+}
+
+.sidebar {
+  border-right: 1px solid var(--bg-3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--bg-3);
+  flex-shrink: 0;
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Drop zone */
+.dropzone {
+  position: relative;
+  border: 1.5px dashed var(--bg-3);
+  border-radius: var(--r);
+  padding: 28px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.dropzone:hover, .dropzone.over { border-color: var(--ink-3); background: var(--bg-2); }
+.dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.dropzone svg { display: block; margin: 0 auto 8px; color: var(--ink-4); }
+.dropzone p { font-size: 13px; color: var(--ink-3); line-height: 1.6; }
+.dropzone p strong { color: var(--ink-2); font-weight: 500; }
+
+/* File info */
+.file-info {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 11px;
+  background: var(--bg-2); border: 1px solid var(--bg-3); border-radius: var(--r);
+}
+.file-info svg { color: var(--ink-3); flex-shrink: 0; }
+.file-info .name {
+  font-family: var(--mono); font-size: 12px; color: var(--ink);
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.file-info .pages { font-family: var(--mono); font-size: 11px; color: var(--ink-3); flex-shrink: 0; }
+.file-info .change {
+  background: none; border: none; padding: 0;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px; flex-shrink: 0;
+}
+.file-info .change:hover { color: var(--ink); }
+
+/* Ranges */
+.ranges-scroll { flex: 1; overflow-y: auto; padding: 18px 20px; }
+.ranges-scroll .label { margin-bottom: 12px; }
+
+.range-list { display: flex; flex-direction: column; gap: 6px; }
+
+.range-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 28px;
+  gap: 5px;
+  align-items: end;
+}
+.range-field { display: flex; flex-direction: column; gap: 3px; }
+.range-field label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+.range-field input {
+  width: 100%;
+  font-family: var(--mono); font-size: 13px; color: var(--ink);
+  background: var(--bg-2); border: 1px solid var(--bg-3); border-radius: var(--r);
+  padding: 6px 9px; outline: none;
+  transition: border-color .12s;
+  appearance: textfield; -moz-appearance: textfield;
+}
+.range-field input::-webkit-inner-spin-button,
+.range-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.range-field input:focus { border-color: var(--ink-3); }
+.range-field input.err { border-color: var(--red); }
+
+.rm-btn {
+  background: none; border: none;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--ink-4); font-size: 17px;
+  border-radius: var(--r); transition: color .12s, background .12s;
+}
+.rm-btn:hover { color: var(--red); background: #2a1a1a; }
+
+.add-btn {
+  margin-top: 8px; width: 100%;
+  background: none; border: 1.5px dashed var(--bg-3); border-radius: var(--r);
+  padding: 7px; font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  cursor: pointer; letter-spacing: .04em; transition: border-color .12s, color .12s;
+}
+.add-btn:hover { border-color: var(--ink-3); color: var(--ink-2); }
+
+/* Actions */
+.actions { padding: 14px 20px; border-top: 1px solid var(--bg-3); flex-shrink: 0; }
+.extract-btn {
+  width: 100%; background: var(--ink); color: var(--bg);
+  border: none; border-radius: var(--r);
+  padding: 10px 14px;
+  font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .04em;
+  cursor: pointer; transition: opacity .15s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.extract-btn:hover { opacity: .82; }
+.extract-btn:disabled { opacity: .28; cursor: not-allowed; }
+.hint { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-align: center; margin-top: 7px; min-height: 14px; }
+
+/* Preview */
+.preview { display: flex; flex-direction: column; overflow: hidden; }
+.preview-top {
+  padding: 12px 20px; border-bottom: 1px solid var(--bg-3);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.preview-top .label { margin: 0; }
+.preview-top-right { display: flex; align-items: center; gap: 12px; }
+.legend { display: none; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue-glow); border: 1.5px solid var(--blue); }
+
+.scale-btns {
+  display: flex; gap: 2px;
+}
+.scale-btn {
+  background: none; border: 1px solid var(--bg-3); border-radius: 2px;
+  font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+  padding: 3px 7px; cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.scale-btn:hover { color: var(--ink-2); border-color: var(--ink-4); }
+.scale-btn.active { background: var(--bg-3); color: var(--ink); border-color: var(--bg-3); }
+
+.combine-section { border-bottom: none; border-top: 1px solid var(--bg-3); }
+.combine-section .scale-btns { display: flex; gap: 3px; }
+.combine-section .scale-btn { flex: 1; padding: 5px 0; }
+.combine-note { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 7px; line-height: 1.5; }
+
+.preview-grid {
+  flex: 1; overflow-y: auto;
+  padding: 20px;
+  display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start;
+}
+
+.empty-state {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+}
+.empty-state svg { opacity: .2; }
+.empty-state p { font-family: var(--mono); font-size: 11px; color: var(--ink-4); }
+
+.thumb { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.thumb-wrap {
+  border-radius: 2px; overflow: hidden;
+  outline: 2px solid transparent;
+  transition: outline-color .15s, box-shadow .15s, opacity .15s;
+  background: var(--bg-2);
+}
+.thumb-wrap.in-range { outline-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-glow); }
+.thumb-wrap.out-of-range { opacity: .75; }
+.thumb-wrap canvas { display: block; }
+.thumb-num { font-family: var(--mono); font-size: 10px; color: var(--ink-3); transition: color .12s; }
+.thumb-num.in-range { color: var(--blue); font-weight: 500; }
+
+/* Status */
+.status {
+  grid-column: 1/-1; display: none;
+  align-items: center; gap: 8px; padding: 6px 20px;
+  background: var(--bg-3); font-family: var(--mono); font-size: 11px; color: var(--ink);
+}
+.status.on { display: flex; }
+.spinner {
+  width: 11px; height: 11px; flex-shrink: 0;
+  border: 1.5px solid var(--ink-4); border-top-color: var(--ink);
+  border-radius: 50%; animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.preview-grid::-webkit-scrollbar,
+.ranges-scroll::-webkit-scrollbar { width: 4px; }
+.preview-grid::-webkit-scrollbar-thumb,
+.ranges-scroll::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 2px; }
+.preview-grid::-webkit-scrollbar-track,
+.ranges-scroll::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header><h1>PDF Slicer</h1></header>
+
+  <aside class="sidebar">
+    <div class="sidebar-section" id="sec-drop">
+      <div class="label">Source</div>
+      <div class="dropzone" id="dropzone">
+        <input type="file" accept=".pdf" id="file-input">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+        <p><strong>Drop PDF here</strong><br>or click to browse</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="sec-file" style="display:none">
+      <div class="label">Source</div>
+      <div class="file-info">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span class="name" id="fname"></span>
+        <span class="pages" id="fpages"></span>
+        <button class="change" id="change-btn">change</button>
+      </div>
+    </div>
+
+    <div class="ranges-scroll">
+      <div class="label">Page ranges</div>
+      <div class="range-list" id="range-list"></div>
+      <button class="add-btn" id="add-btn">+ add range</button>
+    </div>
+
+    <div class="sidebar-section combine-section">
+      <div class="label">Combine pages</div>
+      <div class="scale-btns" id="nup-btns">
+        <button class="scale-btn active" data-n="1">Off</button>
+        <button class="scale-btn" data-n="2">2-up</button>
+        <button class="scale-btn" data-n="4">4-up</button>
+        <button class="scale-btn" data-n="6">6-up</button>
+        <button class="scale-btn" data-n="9">9-up</button>
+      </div>
+      <div class="combine-note" id="combine-note"></div>
+    </div>
+
+    <div class="actions">
+      <button class="extract-btn" id="extract-btn" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Extract &amp; Download
+      </button>
+      <div class="hint" id="hint"></div>
+    </div>
+  </aside>
+
+  <div class="preview">
+    <div class="preview-top">
+      <div class="label">Preview</div>
+      <div class="preview-top-right">
+        <div class="legend" id="legend"><div class="legend-dot"></div>in range</div>
+        <div class="scale-btns" id="scale-btns">
+          <button class="scale-btn" data-w="180">S</button>
+          <button class="scale-btn" data-w="280">M</button>
+          <button class="scale-btn active" data-w="380">L</button>
+          <button class="scale-btn" data-w="520">XL</button>
+        </div>
+      </div>
+    </div>
+    <div class="preview-grid" id="grid">
+      <div class="empty-state" id="empty">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <p>load a PDF and confirm a range to preview</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" id="status">
+    <div class="spinner"></div>
+    <span id="status-text"></span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+'use strict';
+const { PDFDocument } = PDFLib;
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// State
+let pjsDoc = null, plibDoc = null, totalPgs = 0, currentFile = '';
+let uid = 0, renderTok = 0;
+const ranges = [], thumbs = {};
+let THUMB_W = 380;
+let nUp = 1;
+const WORKERS = 4;
+const LAYOUTS = { 2: [1, 2], 4: [2, 2], 6: [2, 3], 9: [3, 3] };  // n → [cols, rows]
+
+// DOM
+const $ = id => document.getElementById(id);
+const secDrop = $('sec-drop'), secFile = $('sec-file');
+const dropzone = $('dropzone'), fileInput = $('file-input');
+const fname = $('fname'), fpages = $('fpages'), changeBtn = $('change-btn');
+const rangeList = $('range-list'), addBtn = $('add-btn');
+const extractBtn = $('extract-btn'), hint = $('hint');
+const grid = $('grid'), empty = $('empty'), legend = $('legend');
+const statusEl = $('status'), statusTxt = $('status-text');
+
+// Scale control
+document.getElementById('scale-btns').addEventListener('click', e => {
+  const btn = e.target.closest('.scale-btn');
+  if (!btn) return;
+  document.querySelectorAll('#scale-btns .scale-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  THUMB_W = parseInt(btn.dataset.w, 10);
+  if (pjsDoc) renderPreview();
+});
+
+// N-up control
+document.getElementById('nup-btns').addEventListener('click', e => {
+  const btn = e.target.closest('.scale-btn');
+  if (!btn) return;
+  document.querySelectorAll('#nup-btns .scale-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  nUp = parseInt(btn.dataset.n, 10);
+  syncBtn();
+});
+
+// File loading
+fileInput.addEventListener('change', e => { if (e.target.files[0]) load(e.target.files[0]); });
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f?.type === 'application/pdf') load(f);
+});
+document.addEventListener('paste', e => {
+  for (const item of e.clipboardData?.items ?? [])
+    if (item.type === 'application/pdf') { load(item.getAsFile()); break; }
+});
+changeBtn.addEventListener('click', reset);
+
+async function load(file) {
+  showStatus('Loading\u2026');
+  try {
+    const ab = await file.arrayBuffer();
+    const copy = ab.slice(0);
+    pjsDoc  = await pdfjsLib.getDocument({ data: ab }).promise;
+    plibDoc = await PDFDocument.load(copy);
+    totalPgs = pjsDoc.numPages;
+    fname.textContent  = file.name;
+    fpages.textContent = `${totalPgs} page${totalPgs !== 1 ? 's' : ''}`;
+    currentFile = file.name.replace(/\.pdf$/i, '');
+    secDrop.style.display = 'none';
+    secFile.style.display  = 'block';
+    if (ranges.length === 0) addRange(1, totalPgs);
+    syncBtn();
+    clearStatus();
+  } catch (err) {
+    clearStatus();
+    alert('Could not load PDF: ' + err.message);
+  }
+}
+
+function reset() {
+  pjsDoc = plibDoc = null; totalPgs = 0;
+  renderTok++;
+  for (const k in thumbs) delete thumbs[k];
+  Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
+  empty.style.display = 'flex';
+  legend.style.display = 'none';
+  ranges.length = 0;
+  rangeList.innerHTML = '';
+  extractBtn.disabled = true;
+  hint.textContent = '';
+  fileInput.value = '';
+  secFile.style.display = 'none';
+  secDrop.style.display  = 'block';
+}
+
+// Rendering
+async function renderPreview() {
+  const tok = ++renderTok;
+  Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
+  for (const k in thumbs) delete thumbs[k];
+
+  const sel = selectedPages();
+  if (!pjsDoc || sel.length === 0) {
+    empty.style.display  = 'flex';
+    legend.style.display = 'none';
+    return;
+  }
+  empty.style.display  = 'none';
+  legend.style.display = 'flex';
+
+  const rangeSet = new Set(sel);
+
+  // Uniform slot height from page 1
+  const p1   = await pjsDoc.getPage(1);
+  if (tok !== renderTok) return;
+  const p1vp = p1.getViewport({ scale: 1 });
+  const slotH = Math.round((p1vp.height / p1vp.width) * THUMB_W);
+
+  // Insert all slots immediately so scroll positions exist
+  for (let n = 1; n <= totalPgs; n++) {
+    const inR = rangeSet.has(n);
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb-wrap ' + (inR ? 'in-range' : 'out-of-range');
+    wrap.style.cssText = `width:${THUMB_W}px;height:${slotH}px`;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'thumb-num' + (inR ? ' in-range' : '');
+    lbl.textContent = n;
+
+    const th = document.createElement('div');
+    th.className = 'thumb';
+    th.appendChild(wrap); th.appendChild(lbl);
+    grid.appendChild(th);
+    thumbs[n] = { wrap, lbl, done: false };
+  }
+
+  // Scroll to first range page
+  const first = ranges.find(r => !invalid(r));
+  if (first) thumbs[first.from]?.wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Render order: range pages first, then rest by proximity to range
+  const rangeNums = [...new Set(sel)];
+  const rMin = Math.min(...rangeNums), rMax = Math.max(...rangeNums);
+  const others = [];
+  for (let n = 1; n <= totalPgs; n++) if (!rangeSet.has(n)) others.push(n);
+  others.sort((a, b) => {
+    const da = a < rMin ? rMin - a : a - rMax;
+    const db = b < rMin ? rMin - b : b - rMax;
+    return da - db;
+  });
+
+  const queue = [...rangeNums, ...others];
+  let qi = 0;
+
+  async function renderOne(n) {
+    if (tok !== renderTok) return;
+    const el = thumbs[n];
+    if (!el || el.done) return;
+    const page = await pjsDoc.getPage(n);
+    if (tok !== renderTok) return;
+    const nat = page.getViewport({ scale: 1 });
+    const vp  = page.getViewport({ scale: THUMB_W / nat.width });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width; canvas.height = vp.height;
+    canvas.style.cssText = `width:${vp.width}px;height:${vp.height}px`;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    if (tok !== renderTok) return;
+    el.wrap.style.cssText = '';
+    el.wrap.innerHTML = '';
+    el.wrap.appendChild(canvas);
+    el.done = true;
+  }
+
+  async function worker() {
+    while (tok === renderTok) {
+      const i = qi++;
+      if (i >= queue.length) return;
+      await renderOne(queue[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: WORKERS }, worker));
+}
+
+function syncHighlights() {
+  const sel = new Set(selectedPages());
+  for (const [k, el] of Object.entries(thumbs)) {
+    const inR = sel.has(Number(k));
+    el.wrap.classList.toggle('in-range',    inR);
+    el.wrap.classList.toggle('out-of-range', !inR);
+    el.lbl.classList.toggle('in-range', inR);
+  }
+}
+
+// Ranges
+function addRange(from = 1, to = 1) {
+  const id = ++uid;
+  const r  = { id, from, to };
+  ranges.push(r);
+
+  const row = document.createElement('div');
+  row.className = 'range-row';
+
+  function makeField(labelTxt, key) {
+    const wrap  = document.createElement('div');
+    wrap.className = 'range-field';
+    const lbl   = document.createElement('label');
+    lbl.textContent = labelTxt;
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.min = 1; inp.value = r[key];
+    wrap.appendChild(lbl); wrap.appendChild(inp);
+
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', () => {
+      let v = parseInt(inp.value, 10);
+      if (isNaN(v) || v < 1) v = 1;
+      if (totalPgs && v > totalPgs) v = totalPgs;
+      r[key] = v;
+      inp.classList.toggle('err', invalid(r));
+      syncHighlights();
+      syncBtn();
+    });
+    inp.addEventListener('blur', () => {
+      inp.value = r[key];
+      if (!invalid(r)) renderPreview();
+    });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    return wrap;
+  }
+
+  const rm = document.createElement('button');
+  rm.className = 'rm-btn'; rm.title = 'Remove'; rm.textContent = '\xd7';
+  rm.addEventListener('click', () => {
+    ranges.splice(ranges.findIndex(x => x.id === id), 1);
+    row.remove();
+    renderPreview();
+    syncBtn();
+  });
+
+  row.appendChild(makeField('From', 'from'));
+  row.appendChild(makeField('To',   'to'));
+  row.appendChild(rm);
+  rangeList.appendChild(row);
+
+  if (pjsDoc && !invalid(r)) renderPreview();
+  syncBtn();
+}
+
+addBtn.addEventListener('click', () => {
+  const last = ranges[ranges.length - 1];
+  const from = last ? Math.min(last.to + 1, totalPgs || 1) : 1;
+  addRange(from, totalPgs || from);
+});
+
+function invalid(r) {
+  if (!totalPgs) return false;
+  return r.from > r.to || r.to > totalPgs || r.from < 1;
+}
+
+function selectedPages() {
+  const out = [];
+  for (const r of ranges) {
+    if (invalid(r)) continue;
+    for (let p = r.from; p <= r.to; p++) out.push(p);
+  }
+  return out;
+}
+
+function syncBtn() {
+  const n = selectedPages().length;
+  extractBtn.disabled = !plibDoc || n === 0;
+  hint.textContent = n > 0 ? `${n} page${n !== 1 ? 's' : ''} selected`
+                           : (plibDoc ? 'no valid ranges' : '');
+  const note = $('combine-note');
+  if (nUp === 1) {
+    note.textContent = n > 0 ? `output: ${n} sheet${n !== 1 ? 's' : ''}` : '';
+  } else {
+    const sheets = Math.ceil(n / nUp);
+    note.textContent = n > 0
+      ? `output: ${sheets} sheet${sheets !== 1 ? 's' : ''} (${nUp} pages each)`
+      : `${nUp} source pages per sheet`;
+  }
+}
+
+// Extract
+extractBtn.addEventListener('click', async () => {
+  const pages = selectedPages();
+  if (!plibDoc || pages.length === 0) return;
+  showStatus('Extracting\u2026');
+  extractBtn.disabled = true;
+  try {
+    const out = await PDFDocument.create();
+    const idx = pages.map(p => p - 1);
+
+    if (nUp === 1) {
+      const copied = await out.copyPages(plibDoc, idx);
+      copied.forEach(p => out.addPage(p));
+    } else {
+      const [cols, rows] = LAYOUTS[nUp];
+      const srcPages = idx.map(i => plibDoc.getPage(i));
+      const boxes = srcPages.map(p => {
+        const b = p.getCropBox();
+        return { left: b.x, bottom: b.y, right: b.x + b.width, top: b.y + b.height };
+      });
+      const embedded = await out.embedPages(srcPages, boxes);
+      const cellW = Math.max(...embedded.map(e => e.width));
+      const cellH = Math.max(...embedded.map(e => e.height));
+
+      for (let i = 0; i < embedded.length; i += nUp) {
+        const group = embedded.slice(i, i + nUp);
+        const sheet = out.addPage([cellW * cols, cellH * rows]);
+        group.forEach((emb, j) => {
+          const c = j % cols, r = Math.floor(j / cols);
+          sheet.drawPage(emb, {
+            x: c * cellW + (cellW - emb.width) / 2,
+            y: (rows - 1 - r) * cellH + (cellH - emb.height) / 2
+          });
+        });
+      }
+    }
+
+    const bytes = await out.save();
+    const rangeStr = ranges
+      .filter(r => !invalid(r))
+      .map(r => r.from === r.to ? `p${r.from}` : `p${r.from}-${r.to}`)
+      .join('_');
+    const suffix = nUp > 1 ? `_${nUp}up` : '';
+    const filename = `${currentFile}_${rangeStr}${suffix}.pdf`;
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    Object.assign(document.createElement('a'), { href: url, download: filename }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (err) {
+    alert('Extraction failed: ' + err.message);
+  }
+  clearStatus();
+  syncBtn();
+});
+
+// Status
+function showStatus(msg) {
+  statusTxt.textContent = msg;
+  statusEl.classList.add('on');
+  $('app').style.gridTemplateRows = '57px 1fr auto';
+}
+function clearStatus() {
+  statusEl.classList.remove('on');
+  $('app').style.gridTemplateRows = '57px 1fr';
+}
+
+syncBtn();
+</script>
+</body>
+</html>
