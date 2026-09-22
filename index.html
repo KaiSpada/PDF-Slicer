@@ -77,7 +77,6 @@ header h1 {
   margin-bottom: 12px;
 }
 
-/* Drop zone */
 .dropzone {
   position: relative;
   border: 1.5px dashed var(--bg-3);
@@ -93,7 +92,6 @@ header h1 {
 .dropzone p { font-size: 13px; color: var(--ink-3); line-height: 1.6; }
 .dropzone p strong { color: var(--ink-2); font-weight: 500; }
 
-/* File info */
 .file-info {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 11px;
@@ -112,7 +110,6 @@ header h1 {
 }
 .file-info .change:hover { color: var(--ink); }
 
-/* Ranges */
 .ranges-scroll { flex: 1; overflow-y: auto; padding: 18px 20px; }
 .ranges-scroll .label { margin-bottom: 12px; }
 
@@ -126,11 +123,21 @@ header h1 {
 }
 .range-field { display: flex; flex-direction: column; gap: 3px; }
 .range-field label { font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+.input-wrap { position: relative; }
+.jump {
+  position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 2px;
+  color: var(--ink-3); cursor: pointer;
+  transition: color .12s, background .12s;
+}
+.jump:hover { color: var(--blue); background: var(--bg-3); }
 .range-field input {
   width: 100%;
   font-family: var(--mono); font-size: 13px; color: var(--ink);
   background: var(--bg-2); border: 1px solid var(--bg-3); border-radius: var(--r);
-  padding: 6px 9px; outline: none;
+  padding: 6px 30px 6px 9px; outline: none;
   transition: border-color .12s;
   appearance: textfield; -moz-appearance: textfield;
 }
@@ -156,7 +163,6 @@ header h1 {
 }
 .add-btn:hover { border-color: var(--ink-3); color: var(--ink-2); }
 
-/* Actions */
 .actions { padding: 14px 20px; border-top: 1px solid var(--bg-3); flex-shrink: 0; }
 .extract-btn {
   width: 100%; background: var(--ink); color: var(--bg);
@@ -170,7 +176,6 @@ header h1 {
 .extract-btn:disabled { opacity: .28; cursor: not-allowed; }
 .hint { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-align: center; margin-top: 7px; min-height: 14px; }
 
-/* Preview */
 .preview { display: flex; flex-direction: column; overflow: hidden; }
 .preview-top {
   padding: 12px 20px; border-bottom: 1px solid var(--bg-3);
@@ -181,9 +186,7 @@ header h1 {
 .legend { display: none; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue-glow); border: 1.5px solid var(--blue); }
 
-.scale-btns {
-  display: flex; gap: 2px;
-}
+.scale-btns { display: flex; gap: 2px; }
 .scale-btn {
   background: none; border: 1px solid var(--bg-3); border-radius: 2px;
   font-family: var(--mono); font-size: 10px; color: var(--ink-3);
@@ -194,25 +197,28 @@ header h1 {
 .scale-btn.active { background: var(--bg-3); color: var(--ink); border-color: var(--bg-3); }
 
 .combine-section { border-bottom: none; border-top: 1px solid var(--bg-3); }
-.combine-section .scale-btns { display: flex; gap: 3px; }
+.combine-section .scale-btns { gap: 3px; }
 .combine-section .scale-btn { flex: 1; padding: 5px 0; }
 .combine-note { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 7px; line-height: 1.5; }
 
 .preview-grid {
   flex: 1; overflow-y: auto;
   padding: 20px;
-  display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 14px; align-content: start;
 }
 
 .empty-state {
-  width: 100%; height: 100%;
+  flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
 }
 .empty-state svg { opacity: .2; }
 .empty-state p { font-family: var(--mono); font-size: 11px; color: var(--ink-4); }
 
-.thumb { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.thumb { display: flex; flex-direction: column; align-items: center; gap: 5px; scroll-margin-top: 20px; }
 .thumb-wrap {
+  width: 100%;
   border-radius: 2px; overflow: hidden;
   outline: 2px solid transparent;
   transition: outline-color .15s, box-shadow .15s, opacity .15s;
@@ -220,11 +226,10 @@ header h1 {
 }
 .thumb-wrap.in-range { outline-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-glow); }
 .thumb-wrap.out-of-range { opacity: .75; }
-.thumb-wrap canvas { display: block; }
+.thumb-wrap canvas { display: block; width: 100%; height: auto; }
 .thumb-num { font-family: var(--mono); font-size: 10px; color: var(--ink-3); transition: color .12s; }
 .thumb-num.in-range { color: var(--blue); font-weight: 500; }
 
-/* Status */
 .status {
   grid-column: 1/-1; display: none;
   align-items: center; gap: 8px; padding: 6px 20px;
@@ -238,12 +243,22 @@ header h1 {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.preview-grid::-webkit-scrollbar,
 .ranges-scroll::-webkit-scrollbar { width: 4px; }
-.preview-grid::-webkit-scrollbar-thumb,
 .ranges-scroll::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 2px; }
-.preview-grid::-webkit-scrollbar-track,
 .ranges-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.preview-grid { scrollbar-color: var(--ink-4) transparent; }
+.preview-grid::-webkit-scrollbar { width: 14px; }
+.preview-grid::-webkit-scrollbar-track { background: transparent; }
+.preview-grid::-webkit-scrollbar-thumb {
+  background-color: var(--ink-4);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 7px;
+  min-height: 48px;
+}
+.preview-grid::-webkit-scrollbar-thumb:hover,
+.preview-grid::-webkit-scrollbar-thumb:active { background-color: var(--ink-3); }
 </style>
 </head>
 <body>
@@ -315,21 +330,21 @@ header h1 {
       <div class="preview-top-right">
         <div class="legend" id="legend"><div class="legend-dot"></div>in range</div>
         <div class="scale-btns" id="scale-btns">
-          <button class="scale-btn" data-w="180">S</button>
-          <button class="scale-btn" data-w="280">M</button>
-          <button class="scale-btn active" data-w="380">L</button>
-          <button class="scale-btn" data-w="520">XL</button>
+          <button class="scale-btn" data-c="5">XS</button>
+          <button class="scale-btn" data-c="4">S</button>
+          <button class="scale-btn" data-c="3">M</button>
+          <button class="scale-btn active" data-c="2">L</button>
+          <button class="scale-btn" data-c="1">XL</button>
         </div>
       </div>
     </div>
-    <div class="preview-grid" id="grid">
-      <div class="empty-state" id="empty">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-        <p>load a PDF and confirm a range to preview</p>
-      </div>
+    <div class="preview-grid" id="grid" style="display:none"></div>
+    <div class="empty-state" id="empty">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <p>load a PDF to preview</p>
     </div>
   </div>
 
@@ -347,51 +362,53 @@ const { PDFDocument } = PDFLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// State
-let pjsDoc = null, plibDoc = null, totalPgs = 0, currentFile = '';
-let uid = 0, renderTok = 0;
-const ranges = [], thumbs = {};
-let THUMB_W = 380;
-let nUp = 1;
 const WORKERS = 4;
-const LAYOUTS = { 2: [1, 2], 4: [2, 2], 6: [2, 3], 9: [3, 3] };  // n → [cols, rows]
+const LAYOUTS = { 2: [1, 2], 4: [2, 2], 6: [2, 3], 9: [3, 3] };
+const JUMP_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 
-// DOM
+let pjsDoc = null, plibDoc = null, totalPgs = 0, currentFile = '';
+let gridId = 0, queueId = 0, focusPage = 1;
+let cols = 2, nUp = 1;
+let thumbs = [];
+const ranges = [];
+
 const $ = id => document.getElementById(id);
 const secDrop = $('sec-drop'), secFile = $('sec-file');
 const dropzone = $('dropzone'), fileInput = $('file-input');
-const fname = $('fname'), fpages = $('fpages'), changeBtn = $('change-btn');
+const fname = $('fname'), fpages = $('fpages');
 const rangeList = $('range-list'), addBtn = $('add-btn');
-const extractBtn = $('extract-btn'), hint = $('hint');
+const extractBtn = $('extract-btn'), hint = $('hint'), note = $('combine-note');
 const grid = $('grid'), empty = $('empty'), legend = $('legend');
 const statusEl = $('status'), statusTxt = $('status-text');
 
-// Scale control
-document.getElementById('scale-btns').addEventListener('click', e => {
+function setActive(groupId, btn) {
+  $(groupId).querySelectorAll('.scale-btn').forEach(b => b.classList.toggle('active', b === btn));
+}
+
+$('scale-btns').addEventListener('click', async e => {
   const btn = e.target.closest('.scale-btn');
   if (!btn) return;
-  document.querySelectorAll('#scale-btns .scale-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  THUMB_W = parseInt(btn.dataset.w, 10);
-  if (pjsDoc) renderPreview();
+  setActive('scale-btns', btn);
+  cols = +btn.dataset.c;
+  if (!pjsDoc) return;
+  await buildGrid();
+  jump(focusPage, false);
 });
 
-// N-up control
-document.getElementById('nup-btns').addEventListener('click', e => {
+$('nup-btns').addEventListener('click', e => {
   const btn = e.target.closest('.scale-btn');
   if (!btn) return;
-  document.querySelectorAll('#nup-btns .scale-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  nUp = parseInt(btn.dataset.n, 10);
+  setActive('nup-btns', btn);
+  nUp = +btn.dataset.n;
   syncBtn();
 });
 
-// File loading
 fileInput.addEventListener('change', e => { if (e.target.files[0]) load(e.target.files[0]); });
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('over'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
 dropzone.addEventListener('drop', e => {
-  e.preventDefault(); dropzone.classList.remove('over');
+  e.preventDefault();
+  dropzone.classList.remove('over');
   const f = e.dataTransfer.files[0];
   if (f?.type === 'application/pdf') load(f);
 });
@@ -399,23 +416,25 @@ document.addEventListener('paste', e => {
   for (const item of e.clipboardData?.items ?? [])
     if (item.type === 'application/pdf') { load(item.getAsFile()); break; }
 });
-changeBtn.addEventListener('click', reset);
+$('change-btn').addEventListener('click', reset);
 
 async function load(file) {
   showStatus('Loading\u2026');
   try {
     const ab = await file.arrayBuffer();
     const copy = ab.slice(0);
-    pjsDoc  = await pdfjsLib.getDocument({ data: ab }).promise;
+    pjsDoc = await pdfjsLib.getDocument({ data: ab }).promise;
     plibDoc = await PDFDocument.load(copy);
     totalPgs = pjsDoc.numPages;
-    fname.textContent  = file.name;
-    fpages.textContent = `${totalPgs} page${totalPgs !== 1 ? 's' : ''}`;
     currentFile = file.name.replace(/\.pdf$/i, '');
+    fname.textContent = file.name;
+    fpages.textContent = `${totalPgs} page${totalPgs !== 1 ? 's' : ''}`;
     secDrop.style.display = 'none';
-    secFile.style.display  = 'block';
+    secFile.style.display = 'block';
     if (ranges.length === 0) addRange(1, totalPgs);
     syncBtn();
+    await buildGrid();
+    jump(ranges.find(r => !invalid(r))?.from ?? 1, false);
     clearStatus();
   } catch (err) {
     clearStatus();
@@ -424,170 +443,165 @@ async function load(file) {
 }
 
 function reset() {
-  pjsDoc = plibDoc = null; totalPgs = 0;
-  renderTok++;
-  for (const k in thumbs) delete thumbs[k];
-  Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
-  empty.style.display = 'flex';
-  legend.style.display = 'none';
+  pjsDoc = plibDoc = null;
+  totalPgs = 0;
+  focusPage = 1;
+  gridId++;
+  queueId++;
+  clearGrid();
   ranges.length = 0;
-  rangeList.innerHTML = '';
-  extractBtn.disabled = true;
-  hint.textContent = '';
+  rangeList.replaceChildren();
   fileInput.value = '';
   secFile.style.display = 'none';
-  secDrop.style.display  = 'block';
+  secDrop.style.display = 'block';
+  syncBtn();
 }
 
-// Rendering
-async function renderPreview() {
-  const tok = ++renderTok;
-  Array.from(grid.children).forEach(c => { if (c !== empty) c.remove(); });
-  for (const k in thumbs) delete thumbs[k];
+function clearGrid() {
+  thumbs = [];
+  grid.replaceChildren();
+  grid.style.display = 'none';
+  empty.style.display = 'flex';
+  legend.style.display = 'none';
+}
 
-  const sel = selectedPages();
-  if (!pjsDoc || sel.length === 0) {
-    empty.style.display  = 'flex';
-    legend.style.display = 'none';
-    return;
-  }
-  empty.style.display  = 'none';
-  legend.style.display = 'flex';
-
-  const rangeSet = new Set(sel);
-
-  // Uniform slot height from page 1
-  const p1   = await pjsDoc.getPage(1);
-  if (tok !== renderTok) return;
-  const p1vp = p1.getViewport({ scale: 1 });
-  const slotH = Math.round((p1vp.height / p1vp.width) * THUMB_W);
-
-  // Insert all slots immediately so scroll positions exist
+async function buildGrid() {
+  const g = ++gridId;
+  queueId++;
+  const vp = (await pjsDoc.getPage(1)).getViewport({ scale: 1 });
+  if (g !== gridId) return;
+  clearGrid();
+  grid.style.setProperty('--cols', cols);
+  const ar = `${vp.width} / ${vp.height}`;
+  const frag = document.createDocumentFragment();
   for (let n = 1; n <= totalPgs; n++) {
-    const inR = rangeSet.has(n);
-    const wrap = document.createElement('div');
-    wrap.className = 'thumb-wrap ' + (inR ? 'in-range' : 'out-of-range');
-    wrap.style.cssText = `width:${THUMB_W}px;height:${slotH}px`;
-
-    const lbl = document.createElement('div');
-    lbl.className = 'thumb-num' + (inR ? ' in-range' : '');
-    lbl.textContent = n;
-
     const th = document.createElement('div');
+    const wrap = document.createElement('div');
+    const lbl = document.createElement('div');
     th.className = 'thumb';
-    th.appendChild(wrap); th.appendChild(lbl);
-    grid.appendChild(th);
-    thumbs[n] = { wrap, lbl, done: false };
+    wrap.className = 'thumb-wrap';
+    wrap.style.aspectRatio = ar;
+    lbl.className = 'thumb-num';
+    lbl.textContent = n;
+    th.append(wrap, lbl);
+    frag.append(th);
+    thumbs[n] = { th, wrap, lbl, state: 0 };
   }
+  empty.style.display = 'none';
+  legend.style.display = 'flex';
+  grid.style.display = '';
+  grid.append(frag);
+  syncHighlights();
+}
 
-  // Scroll to first range page
-  const first = ranges.find(r => !invalid(r));
-  if (first) thumbs[first.from]?.wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function jump(n, smooth = true) {
+  const t = thumbs[n];
+  if (!t) return;
+  focusPage = n;
+  t.th.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  queueRender();
+}
 
-  // Render order: range pages first, then rest by proximity to range
-  const rangeNums = [...new Set(sel)];
-  const rMin = Math.min(...rangeNums), rMax = Math.max(...rangeNums);
-  const others = [];
-  for (let n = 1; n <= totalPgs; n++) if (!rangeSet.has(n)) others.push(n);
-  others.sort((a, b) => {
-    const da = a < rMin ? rMin - a : a - rMax;
-    const db = b < rMin ? rMin - b : b - rMax;
-    return da - db;
-  });
+function queueRender() {
+  const q = ++queueId, g = gridId, f = focusPage;
+  const sel = new Set(selectedPages());
+  const near = cols * 4;
+  const tier = n => Math.abs(n - f) <= near ? 0 : sel.has(n) ? 1 : 2;
+  const queue = [];
+  for (let n = 1; n <= totalPgs; n++) if (thumbs[n]?.state === 0) queue.push(n);
+  queue.sort((a, b) => tier(a) - tier(b) || Math.abs(a - f) - Math.abs(b - f));
+  let i = 0;
+  const worker = async () => {
+    while (q === queueId && i < queue.length) await renderOne(queue[i++], g);
+  };
+  for (let k = 0; k < WORKERS; k++) worker();
+}
 
-  const queue = [...rangeNums, ...others];
-  let qi = 0;
-
-  async function renderOne(n) {
-    if (tok !== renderTok) return;
-    const el = thumbs[n];
-    if (!el || el.done) return;
+async function renderOne(n, g) {
+  const t = thumbs[n];
+  if (!t || t.state !== 0) return;
+  t.state = 1;
+  try {
     const page = await pjsDoc.getPage(n);
-    if (tok !== renderTok) return;
-    const nat = page.getViewport({ scale: 1 });
-    const vp  = page.getViewport({ scale: THUMB_W / nat.width });
+    const w = t.wrap.clientWidth || grid.clientWidth / cols;
+    const vp = page.getViewport({ scale: w / page.getViewport({ scale: 1 }).width });
     const canvas = document.createElement('canvas');
-    canvas.width = vp.width; canvas.height = vp.height;
-    canvas.style.cssText = `width:${vp.width}px;height:${vp.height}px`;
+    canvas.width = vp.width;
+    canvas.height = vp.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-    if (tok !== renderTok) return;
-    el.wrap.style.cssText = '';
-    el.wrap.innerHTML = '';
-    el.wrap.appendChild(canvas);
-    el.done = true;
+    if (g !== gridId) return;
+    t.wrap.style.aspectRatio = '';
+    t.wrap.replaceChildren(canvas);
+    t.state = 2;
+  } catch {
+    t.state = 0;
   }
-
-  async function worker() {
-    while (tok === renderTok) {
-      const i = qi++;
-      if (i >= queue.length) return;
-      await renderOne(queue[i]);
-    }
-  }
-  await Promise.all(Array.from({ length: WORKERS }, worker));
 }
 
 function syncHighlights() {
   const sel = new Set(selectedPages());
-  for (const [k, el] of Object.entries(thumbs)) {
-    const inR = sel.has(Number(k));
-    el.wrap.classList.toggle('in-range',    inR);
-    el.wrap.classList.toggle('out-of-range', !inR);
-    el.lbl.classList.toggle('in-range', inR);
-  }
+  thumbs.forEach((t, n) => {
+    const inR = sel.has(n);
+    t.wrap.classList.toggle('in-range', inR);
+    t.wrap.classList.toggle('out-of-range', !inR);
+    t.lbl.classList.toggle('in-range', inR);
+  });
 }
 
-// Ranges
-function addRange(from = 1, to = 1) {
-  const id = ++uid;
-  const r  = { id, from, to };
+function addRange(from, to) {
+  const r = { from, to };
   ranges.push(r);
-
+  const inputs = [];
   const row = document.createElement('div');
   row.className = 'range-row';
 
-  function makeField(labelTxt, key) {
-    const wrap  = document.createElement('div');
+  const field = (text, key) => {
+    const wrap = document.createElement('div');
     wrap.className = 'range-field';
-    const lbl   = document.createElement('label');
-    lbl.textContent = labelTxt;
+    wrap.innerHTML = `<label>${text}</label><div class="input-wrap"><button class="jump" title="Show in preview">${JUMP_ICON}</button></div>`;
     const inp = document.createElement('input');
-    inp.type = 'number'; inp.min = 1; inp.value = r[key];
-    wrap.appendChild(lbl); wrap.appendChild(inp);
+    inp.type = 'number';
+    inp.min = 1;
+    inp.value = r[key];
+    wrap.querySelector('.input-wrap').prepend(inp);
+    inputs.push(inp);
 
     inp.addEventListener('focus', () => inp.select());
     inp.addEventListener('input', () => {
-      let v = parseInt(inp.value, 10);
-      if (isNaN(v) || v < 1) v = 1;
-      if (totalPgs && v > totalPgs) v = totalPgs;
-      r[key] = v;
-      inp.classList.toggle('err', invalid(r));
+      const v = parseInt(inp.value, 10);
+      r[key] = Math.min(Math.max(isNaN(v) ? 1 : v, 1), totalPgs || Infinity);
+      inputs.forEach(i => i.classList.toggle('err', invalid(r)));
       syncHighlights();
       syncBtn();
     });
     inp.addEventListener('blur', () => {
       inp.value = r[key];
-      if (!invalid(r)) renderPreview();
+      queueRender();
     });
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      inp.value = r[key];
+      jump(r[key]);
+      inp.select();
+    });
+    wrap.querySelector('.jump').addEventListener('click', () => jump(r[key]));
     return wrap;
-  }
+  };
 
   const rm = document.createElement('button');
-  rm.className = 'rm-btn'; rm.title = 'Remove'; rm.textContent = '\xd7';
+  rm.className = 'rm-btn';
+  rm.title = 'Remove';
+  rm.textContent = '\xd7';
   rm.addEventListener('click', () => {
-    ranges.splice(ranges.findIndex(x => x.id === id), 1);
+    ranges.splice(ranges.indexOf(r), 1);
     row.remove();
-    renderPreview();
+    syncHighlights();
     syncBtn();
+    queueRender();
   });
 
-  row.appendChild(makeField('From', 'from'));
-  row.appendChild(makeField('To',   'to'));
-  row.appendChild(rm);
-  rangeList.appendChild(row);
-
-  if (pjsDoc && !invalid(r)) renderPreview();
+  row.append(field('From', 'from'), field('To', 'to'), rm);
+  rangeList.append(row);
   syncBtn();
 }
 
@@ -595,6 +609,8 @@ addBtn.addEventListener('click', () => {
   const last = ranges[ranges.length - 1];
   const from = last ? Math.min(last.to + 1, totalPgs || 1) : 1;
   addRange(from, totalPgs || from);
+  syncHighlights();
+  jump(from);
 });
 
 function invalid(r) {
@@ -616,7 +632,6 @@ function syncBtn() {
   extractBtn.disabled = !plibDoc || n === 0;
   hint.textContent = n > 0 ? `${n} page${n !== 1 ? 's' : ''} selected`
                            : (plibDoc ? 'no valid ranges' : '');
-  const note = $('combine-note');
   if (nUp === 1) {
     note.textContent = n > 0 ? `output: ${n} sheet${n !== 1 ? 's' : ''}` : '';
   } else {
@@ -627,7 +642,6 @@ function syncBtn() {
   }
 }
 
-// Extract
 extractBtn.addEventListener('click', async () => {
   const pages = selectedPages();
   if (!plibDoc || pages.length === 0) return;
@@ -670,9 +684,8 @@ extractBtn.addEventListener('click', async () => {
       .map(r => r.from === r.to ? `p${r.from}` : `p${r.from}-${r.to}`)
       .join('_');
     const suffix = nUp > 1 ? `_${nUp}up` : '';
-    const filename = `${currentFile}_${rangeStr}${suffix}.pdf`;
     const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-    Object.assign(document.createElement('a'), { href: url, download: filename }).click();
+    Object.assign(document.createElement('a'), { href: url, download: `${currentFile}_${rangeStr}${suffix}.pdf` }).click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   } catch (err) {
     alert('Extraction failed: ' + err.message);
@@ -681,7 +694,6 @@ extractBtn.addEventListener('click', async () => {
   syncBtn();
 });
 
-// Status
 function showStatus(msg) {
   statusTxt.textContent = msg;
   statusEl.classList.add('on');
