@@ -391,8 +391,10 @@ $('scale-btns').addEventListener('click', async e => {
   setActive('scale-btns', btn);
   cols = +btn.dataset.c;
   if (!pjsDoc) return;
+  const target = focusPage;
+  const frac = pageFraction(target);
   await buildGrid();
-  jump(focusPage, false);
+  restoreScroll(target, frac);
 });
 
 $('nup-btns').addEventListener('click', e => {
@@ -401,6 +403,17 @@ $('nup-btns').addEventListener('click', e => {
   setActive('nup-btns', btn);
   nUp = +btn.dataset.n;
   syncBtn();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  const dir = e.key === '=' || e.key === '+' ? 1 : e.key === '-' || e.key === '_' ? -1 : 0;
+  if (!dir) return;
+  e.preventDefault();
+  const btns = [...$('scale-btns').querySelectorAll('.scale-btn')];
+  const i = btns.findIndex(b => b.classList.contains('active'));
+  btns[Math.min(Math.max(i + dir, 0), btns.length - 1)].click();
 });
 
 fileInput.addEventListener('change', e => { if (e.target.files[0]) load(e.target.files[0]); });
@@ -493,6 +506,40 @@ async function buildGrid() {
   grid.append(frag);
   syncHighlights();
 }
+
+function pageFraction(n) {
+  const t = thumbs[n]?.th;
+  if (!t) return 0;
+  const r = t.getBoundingClientRect();
+  return (grid.getBoundingClientRect().top - r.top) / r.height;
+}
+
+function restoreScroll(n, frac) {
+  const t = thumbs[n]?.th;
+  if (!t) return;
+  const r = t.getBoundingClientRect();
+  grid.scrollTop += (r.top - grid.getBoundingClientRect().top) + frac * r.height;
+  focusPage = n;
+  queueRender();
+}
+
+let scrollTick = false;
+grid.addEventListener('scroll', () => {
+  if (scrollTick || !thumbs.length) return;
+  scrollTick = true;
+  requestAnimationFrame(() => {
+    scrollTick = false;
+    const top = grid.getBoundingClientRect().top;
+    let lo = 1, hi = totalPgs, best = focusPage;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (!thumbs[mid]) break;
+      if (thumbs[mid].th.getBoundingClientRect().bottom - top > 1) { best = mid; hi = mid - 1; }
+      else lo = mid + 1;
+    }
+    focusPage = best;
+  });
+});
 
 function jump(n, smooth = true) {
   const t = thumbs[n];
